@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.errors import ConflictError, NotFoundError
 from app.models import Customer, Order, OrderLine, OrderStatus, Product
@@ -87,5 +87,19 @@ def low_stock(db: Session) -> list[Product]:
         select(Product)
         .where(Product.stock <= Product.min_stock)
         .order_by(Product.stock - Product.min_stock, Product.id)
+    )
+    return list(db.scalars(stmt))
+
+
+def customer_orders(db: Session, customer_id: int) -> list[Order]:
+    if db.get(Customer, customer_id) is None:
+        raise NotFoundError(f"customer {customer_id} not found")
+    stmt = (
+        select(Order)
+        .where(Order.customer_id == customer_id)
+        # Load all lines in one extra query instead of one query per order (N+1).
+        .options(selectinload(Order.lines))
+        # id breaks ties between orders created in the same instant.
+        .order_by(Order.created_at.desc(), Order.id.desc())
     )
     return list(db.scalars(stmt))

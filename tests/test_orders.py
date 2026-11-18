@@ -82,3 +82,14 @@ def test_two_customers_cannot_both_buy_the_last_box(client, shop, session_factor
     assert sorted(results) == ["conflict", "ok"]
     with session_factory() as db:
         assert db.get(Product, shop["lemons"]["id"]).stock == Decimal("0")
+
+
+def test_customer_orders_newest_first(client, shop):
+    first = order(client, shop, (shop["tomatoes"]["id"], "1")).json()
+    second = order(client, shop, (shop["tomatoes"]["id"], "2")).json()
+    listed = client.get(f"/api/v1/customers/{shop['customer']['id']}/orders").json()
+    assert [o["id"] for o in listed] == [second["id"], first["id"]]
+
+
+def test_orders_of_unknown_customer_is_404(client):
+    assert client.get("/api/v1/customers/999/orders").status_code == 404
