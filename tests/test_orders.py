@@ -93,3 +93,13 @@ def test_customer_orders_newest_first(client, shop):
 
 def test_orders_of_unknown_customer_is_404(client):
     assert client.get("/api/v1/customers/999/orders").status_code == 404
+
+
+def test_price_change_does_not_touch_existing_orders(client, shop):
+    created = order(client, shop, (shop["tomatoes"]["id"], "5")).json()
+    client.patch(f"/api/v1/products/{shop['tomatoes']['id']}/price", json={"price": "3.10"})
+    old = client.get(f"/api/v1/orders/{created['id']}").json()
+    assert old["lines"][0]["unit_price"] == "2.40"
+    assert old["total"] == "12.00"
+    new = order(client, shop, (shop["tomatoes"]["id"], "5")).json()
+    assert new["total"] == "15.50"

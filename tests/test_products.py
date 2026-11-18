@@ -46,3 +46,14 @@ def test_low_stock_lists_only_products_to_reorder(client, shop):
 
 def test_unknown_product_is_404(client):
     assert client.get("/api/v1/products/999").status_code == 404
+
+
+def test_update_price(client, shop):
+    r = client.patch(f"/api/v1/products/{shop['tomatoes']['id']}/price", json={"price": "2.60"})
+    assert r.status_code == 200
+    assert r.json()["price"] == "2.60"
+
+
+def test_update_price_rejects_negative_and_unknown(client, shop):
+    assert client.patch(f"/api/v1/products/{shop['tomatoes']['id']}/price", json={"price": "-1"}).status_code == 422
+    assert client.patch("/api/v1/products/999/price", json={"price": "1.00"}).status_code == 404

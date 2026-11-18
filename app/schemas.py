@@ -25,6 +25,10 @@ class ProductOut(ProductIn):
     id: int
 
 
+class PriceUpdate(BaseModel):
+    price: Money
+
+
 class CustomerIn(BaseModel):
     name: str = Field(min_length=2, max_length=120)
     vat_number: str = Field(pattern=r"^BG\d{9,10}$", examples=["BG123456789"])

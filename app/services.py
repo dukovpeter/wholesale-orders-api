@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.errors import ConflictError, NotFoundError
 from app.models import Customer, Order, OrderLine, OrderStatus, Product
-from app.schemas import CustomerIn, OrderIn, ProductIn
+from app.schemas import CustomerIn, OrderIn, PriceUpdate, ProductIn
 
 
 def create_product(db: Session, data: ProductIn) -> Product:
@@ -15,6 +15,17 @@ def create_product(db: Session, data: ProductIn) -> Product:
     except IntegrityError as exc:
         db.rollback()
         raise ConflictError(f"sku {data.sku} already exists") from exc
+    db.refresh(product)
+    return product
+
+
+def update_price(db: Session, product_id: int, data: PriceUpdate) -> Product:
+    # Lock the row so a concurrent order reads either the old or the new price, never a half-written state.
+    product = db.scalars(select(Product).where(Product.id == product_id).with_for_update()).first()
+    if product is None:
+        raise NotFoundError(f"product {product_id} not found")
+    product.price = data.price
+    db.commit()
     db.refresh(product)
     return product
 

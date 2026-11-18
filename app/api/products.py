@@ -5,7 +5,7 @@ from app import services
 from app.api.deps import DbSession, get_or_404
 from app.config import get_settings
 from app.models import Product
-from app.schemas import ProductIn, ProductOut
+from app.schemas import PriceUpdate, ProductIn, ProductOut
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -32,3 +32,9 @@ def get_product(product_id: int, db: DbSession) -> Product:
 @router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
 def create_product(data: ProductIn, db: DbSession) -> Product:
     return services.create_product(db, data)
+
+
+@router.patch("/{product_id}/price", response_model=ProductOut)
+def update_price(product_id: int, data: PriceUpdate, db: DbSession) -> Product:
+    # Existing orders are not affected: each order line keeps its own unit_price.
+    return services.update_price(db, product_id, data)
