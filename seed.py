@@ -1,7 +1,8 @@
 """Fill the database with made-up sample data (no real customers or prices).
 
-    docker compose exec api python seed.py
+docker compose exec api python seed.py
 """
+
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -25,7 +26,10 @@ def main() -> None:
         if db.scalars(select(Product).limit(1)).first():
             print("already seeded")
             return
-        db.add_all(Product(sku=s, name=n, unit=u, price=Decimal(p), stock=Decimal(st), min_stock=Decimal(m)) for s, n, u, p, st, m in PRODUCTS)
+        db.add_all(
+            Product(sku=s, name=n, unit=u, price=Decimal(p), stock=Decimal(st), min_stock=Decimal(m))
+            for s, n, u, p, st, m in PRODUCTS
+        )
         db.add_all(Customer(name=n, vat_number=v) for n, v in CUSTOMERS)
         db.commit()
         print(f"seeded {len(PRODUCTS)} products and {len(CUSTOMERS)} customers")

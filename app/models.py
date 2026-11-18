@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -8,13 +8,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db import Base
 
 
-class Unit(str, Enum):
+class Unit(StrEnum):
     KG = "kg"
     BOX = "box"
     PIECE = "piece"
 
 
-class OrderStatus(str, Enum):
+class OrderStatus(StrEnum):
     NEW = "new"
     CONFIRMED = "confirmed"
     CANCELLED = "cancelled"

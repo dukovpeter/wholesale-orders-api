@@ -6,11 +6,11 @@ class DomainError(Exception):
     status_code = status.HTTP_400_BAD_REQUEST
 
 
-class NotFound(DomainError):
+class NotFoundError(DomainError):
     status_code = status.HTTP_404_NOT_FOUND
 
 
-class Conflict(DomainError):
+class ConflictError(DomainError):
     """Valid request that the current state does not allow, e.g. not enough stock."""
 
     status_code = status.HTTP_409_CONFLICT

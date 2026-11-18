@@ -1,15 +1,19 @@
 """Orders: the business rules that protect money and stock."""
+
 import threading
 from decimal import Decimal
 
 from app import services
-from app.errors import Conflict
+from app.errors import ConflictError
 from app.models import Product
 from app.schemas import OrderIn
 
 
 def order(client, shop, *lines):
-    return client.post("/api/v1/orders", json={"customer_id": shop["customer"]["id"], "lines": [{"product_id": p, "quantity": q} for p, q in lines]})
+    return client.post(
+        "/api/v1/orders",
+        json={"customer_id": shop["customer"]["id"], "lines": [{"product_id": p, "quantity": q} for p, q in lines]},
+    )
 
 
 def test_order_reserves_stock_and_computes_total(client, shop):
@@ -25,9 +29,9 @@ def test_not_enough_stock_is_conflict_and_changes_nothing(client, shop):
     assert client.get(f"/api/v1/products/{shop['tomatoes']['id']}").json()["stock"] == "100.00"  # all or nothing
 
 
-def test_price_is_frozen_in_the_order(client, shop, SessionTest):
+def test_price_is_frozen_in_the_order(client, shop, session_factory):
     created = order(client, shop, (shop["tomatoes"]["id"], "1")).json()
-    with SessionTest() as db:
+    with session_factory() as db:
         db.get(Product, shop["tomatoes"]["id"]).price = Decimal("9.99")
         db.commit()
     assert client.get(f"/api/v1/orders/{created['id']}").json()["lines"][0]["unit_price"] == "2.40"
@@ -41,7 +45,13 @@ def test_cancel_returns_stock_and_cannot_cancel_twice(client, shop):
 
 
 def test_unknown_customer_or_product_is_404(client, shop):
-    assert client.post("/api/v1/orders", json={"customer_id": 999, "lines": [{"product_id": shop["tomatoes"]["id"], "quantity": "1"}]}).status_code == 404
+    assert (
+        client.post(
+            "/api/v1/orders",
+            json={"customer_id": 999, "lines": [{"product_id": shop["tomatoes"]["id"], "quantity": "1"}]},
+        ).status_code
+        == 404
+    )
     assert order(client, shop, (999, "1")).status_code == 404
 
 
@@ -49,18 +59,18 @@ def test_same_product_twice_in_one_order_is_rejected(client, shop):
     assert order(client, shop, (shop["tomatoes"]["id"], "1"), (shop["tomatoes"]["id"], "2")).status_code == 422
 
 
-def test_two_customers_cannot_both_buy_the_last_box(client, shop, SessionTest):
+def test_two_customers_cannot_both_buy_the_last_box(client, shop, session_factory):
     """The race that row locks prevent: two orders for the last box of lemons at the same moment."""
     data = OrderIn(customer_id=shop["customer"]["id"], lines=[{"product_id": shop["lemons"]["id"], "quantity": "1"}])
     results, start = [], threading.Barrier(2)
 
     def buy():
-        with SessionTest() as db:
+        with session_factory() as db:
             start.wait()
             try:
                 services.place_order(db, data)
                 results.append("ok")
-            except Conflict:
+            except ConflictError:
                 results.append("conflict")
 
     threads = [threading.Thread(target=buy) for _ in range(2)]
@@ -70,5 +80,5 @@ def test_two_customers_cannot_both_buy_the_last_box(client, shop, SessionTest):
         t.join()
 
     assert sorted(results) == ["conflict", "ok"]
-    with SessionTest() as db:
+    with session_factory() as db:
         assert db.get(Product, shop["lemons"]["id"]).stock == Decimal("0")

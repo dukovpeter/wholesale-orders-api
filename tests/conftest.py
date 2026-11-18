@@ -1,4 +1,5 @@
 """Test setup: a separate PostgreSQL database, built by the real migrations, emptied before every test."""
+
 import os
 
 import psycopg
@@ -9,10 +10,10 @@ from sqlalchemy.orm import sessionmaker
 TEST_URL = os.environ.get("TEST_DATABASE_URL", "postgresql+psycopg://orders:orders@localhost:5432/orders_test")
 os.environ["DATABASE_URL"] = TEST_URL  # the app and Alembic read this before they are imported
 
-from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
+from alembic import command  # noqa: E402
 from app.db import get_db  # noqa: E402
 from app.main import app  # noqa: E402
 
@@ -35,16 +36,16 @@ def engine():
 
 
 @pytest.fixture()
-def SessionTest(engine):
+def session_factory(engine):
     with engine.begin() as conn:
         conn.execute(text("TRUNCATE order_lines, orders, products, customers RESTART IDENTITY CASCADE"))
     return sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
 @pytest.fixture()
-def client(SessionTest):
+def client(session_factory):
     def override():
-        db = SessionTest()
+        db = session_factory()
         try:
             yield db
         finally:
@@ -59,6 +60,26 @@ def client(SessionTest):
 def shop(client):
     """A customer and two products with known stock — the starting point of most tests."""
     customer = client.post("/api/v1/customers", json={"name": "Green Corner Ltd", "vat_number": "BG123456789"}).json()
-    tomatoes = client.post("/api/v1/products", json={"sku": "TOM-RED-KG", "name": "Tomatoes, red", "unit": "kg", "price": "2.40", "stock": "100", "min_stock": "20"}).json()
-    lemons = client.post("/api/v1/products", json={"sku": "LEM-BOX", "name": "Lemons, box 10 kg", "unit": "box", "price": "18.50", "stock": "1", "min_stock": "5"}).json()
+    tomatoes = client.post(
+        "/api/v1/products",
+        json={
+            "sku": "TOM-RED-KG",
+            "name": "Tomatoes, red",
+            "unit": "kg",
+            "price": "2.40",
+            "stock": "100",
+            "min_stock": "20",
+        },
+    ).json()
+    lemons = client.post(
+        "/api/v1/products",
+        json={
+            "sku": "LEM-BOX",
+            "name": "Lemons, box 10 kg",
+            "unit": "box",
+            "price": "18.50",
+            "stock": "1",
+            "min_stock": "5",
+        },
+    ).json()
     return {"customer": customer, "tomatoes": tomatoes, "lemons": lemons}

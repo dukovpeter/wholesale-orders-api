@@ -6,13 +6,17 @@ def test_health(client):
 
 
 def test_create_and_read_product(client):
-    r = client.post("/api/v1/products", json={"sku": "CUC-KG", "name": "Cucumbers", "unit": "kg", "price": "1.90", "stock": "40"})
+    r = client.post(
+        "/api/v1/products", json={"sku": "CUC-KG", "name": "Cucumbers", "unit": "kg", "price": "1.90", "stock": "40"}
+    )
     assert r.status_code == 201
     assert client.get(f"/api/v1/products/{r.json()['id']}").json()["name"] == "Cucumbers"
 
 
 def test_price_is_exact_decimal_not_float(client):
-    r = client.post("/api/v1/products", json={"sku": "APL-KG", "name": "Apples", "unit": "kg", "price": "0.10", "stock": "3"})
+    r = client.post(
+        "/api/v1/products", json={"sku": "APL-KG", "name": "Apples", "unit": "kg", "price": "0.10", "stock": "3"}
+    )
     assert r.json()["price"] == "0.10"
 
 
