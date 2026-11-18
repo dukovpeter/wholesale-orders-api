@@ -86,5 +86,3 @@ tests/          pytest against PostgreSQL
 ## License
 
 MIT
-
-Built with AI-assisted development.
