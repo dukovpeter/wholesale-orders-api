@@ -1,4 +1,5 @@
 # Wholesale Orders API
+n[![CI](https://github.com/dukovpeter/wholesale-orders-api/actions/workflows/ci.yml/badge.svg)](https://github.com/dukovpeter/wholesale-orders-api/actions/workflows/ci.yml)
 
 REST API for a fruit & vegetable wholesaler: products with stock, customers, and orders that reserve stock safely
 under concurrent load. All data in the repository is made up.
