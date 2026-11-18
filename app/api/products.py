@@ -36,5 +36,4 @@ def create_product(data: ProductIn, db: DbSession) -> Product:
 
 @router.patch("/{product_id}/price", response_model=ProductOut)
 def update_price(product_id: int, data: PriceUpdate, db: DbSession) -> Product:
-    # Existing orders are not affected: each order line keeps its own unit_price.
     return services.update_price(db, product_id, data)

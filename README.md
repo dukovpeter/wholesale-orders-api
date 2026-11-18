@@ -41,6 +41,7 @@ docker compose up -d db
 
 ruff check . && ruff format --check .   # lint + formatting
 mypy app                                # strict type check
+alembic check                           # migrations match the models
 pytest                                  # tests + coverage, real PostgreSQL
 ```
 
@@ -55,7 +56,9 @@ steps on every push and pull request (`.github/workflows/ci.yml`).
 | GET, POST | `/api/v1/products` | list (paginated), create |
 | GET | `/api/v1/products/low-stock` | at or below minimum stock |
 | GET | `/api/v1/products/{id}` | one product |
+| PATCH | `/api/v1/products/{id}/price` | change the price (existing orders keep theirs) |
 | POST · GET | `/api/v1/customers` · `/api/v1/customers/{id}` | create, read |
+| GET | `/api/v1/customers/{id}/orders` | a customer's orders, newest first |
 | POST | `/api/v1/orders` | place an order, reserve stock |
 | GET | `/api/v1/orders/{id}` | order with lines and total |
 | POST | `/api/v1/orders/{id}/cancel` | cancel, return stock |

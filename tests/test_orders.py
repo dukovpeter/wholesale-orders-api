@@ -1,5 +1,3 @@
-"""Orders: the business rules that protect money and stock."""
-
 import threading
 from decimal import Decimal
 
