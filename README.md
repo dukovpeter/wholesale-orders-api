@@ -79,7 +79,7 @@ app/
   schemas.py    request / response schemas
   services.py   business rules
 alembic/        migrations
-docs/adr/       architecture decisions
+docs/            architecture decisions (adr/) and roadmap (TODO.md)
 tests/          pytest against PostgreSQL
 ```
 
