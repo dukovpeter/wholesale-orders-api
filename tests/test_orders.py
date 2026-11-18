@@ -103,3 +103,11 @@ def test_price_change_does_not_touch_existing_orders(client, shop):
     assert old["total"] == "12.00"
     new = order(client, shop, (shop["tomatoes"]["id"], "5")).json()
     assert new["total"] == "15.50"
+
+
+def test_cancel_unknown_order_is_404(client):
+    assert client.post("/api/v1/orders/999/cancel").status_code == 404
+
+
+def test_zero_quantity_is_rejected(client, shop):
+    assert order(client, shop, (shop["tomatoes"]["id"], "0")).status_code == 422
