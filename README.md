@@ -45,8 +45,8 @@ alembic check                           # migrations match the models
 pytest                                  # tests + coverage, real PostgreSQL
 ```
 
-Tests use a separate database (`orders_test`) built by the same Alembic migrations as production. CI runs all three
-steps on every push and pull request (`.github/workflows/ci.yml`).
+Tests use a separate database (`orders_test`) built by the same Alembic migrations as production. CI runs all of these
+checks on every push and pull request (`.github/workflows/ci.yml`).
 
 ## API
 
