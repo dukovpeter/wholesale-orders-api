@@ -1,6 +1,8 @@
 """Entry point: creates the FastAPI app and plugs in the routers."""
 from fastapi import FastAPI
 
+from app.routers import router
+
 app = FastAPI(
     title="Wholesale Orders API",
     description="Orders for a fruit & vegetable wholesaler: products, customers, stock and order reservation.",
@@ -12,3 +14,6 @@ app = FastAPI(
 def health() -> dict[str, str]:
     """Liveness check used by Docker and monitoring."""
     return {"status": "ok"}
+
+
+app.include_router(router)
