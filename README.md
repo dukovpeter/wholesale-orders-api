@@ -1,76 +1,85 @@
 # Wholesale Orders API
 
-A small, production-minded REST API for a fruit & vegetable wholesaler: products with stock, customers, and orders
-that **reserve stock safely**. All data in the project is made up.
+REST API for a fruit & vegetable wholesaler: products with stock, customers, and orders that reserve stock safely
+under concurrent load. All data in the repository is made up.
 
-**Stack:** FastAPI · PostgreSQL 16 · SQLAlchemy 2 (ORM) · Alembic · Pydantic 2 · pytest · Docker Compose
+**Stack:** Python 3.12 · FastAPI · PostgreSQL 16 · SQLAlchemy 2 · Alembic · Pydantic 2 · pytest · Docker Compose ·
+GitHub Actions
 
-## What it shows
+## What it solves
 
-| Problem in a real warehouse | How the code handles it |
+| Problem in a real warehouse | How it is handled |
 |---|---|
-| Two shops order the **last box** at the same moment | One transaction, product rows locked with `SELECT … FOR UPDATE` (in id order, no deadlocks). A test runs the race with two threads and expects exactly one success. |
-| Prices change, but old orders must not | The unit price is **copied into the order line** at order time. |
-| Money must be exact | `NUMERIC(10,2)` in the database, `Decimal` in Python, strings in JSON — never `float`. |
-| An order with one missing item must not half-happen | All lines succeed or none do (`409 Conflict`, stock untouched). |
-| Bad input should never reach the database | Pydantic schemas (`422`) + database `CHECK` constraints (stock ≥ 0, price > 0, quantity > 0). |
-| The warehouse needs to know what to reorder | `GET /products/low-stock`. |
+| Two shops order the last box at the same moment | One transaction; product rows locked with `SELECT … FOR UPDATE` in id order. See [ADR 0001](docs/adr/0001-row-locks-for-stock.md). A test runs the race with two threads. |
+| Prices change, old orders must not | The unit price is copied into the order line at order time. |
+| Money must be exact | `NUMERIC(10,2)` in PostgreSQL, `Decimal` in Python, strings in JSON. |
+| An order must not half-happen | All lines succeed or none do — `409 Conflict`, stock untouched. |
+| Bad input must not reach the database | Pydantic validation (`422`) plus `CHECK` constraints in the schema. |
+| The warehouse needs to know what to reorder | `GET /api/v1/products/low-stock` |
 
-## Run it
+## Quick start
 
 ```bash
-docker compose up --build        # API on http://localhost:8000, docs on /docs
+docker compose up --build
 docker compose exec api python seed.py
 ```
 
-Try an order:
+API: http://localhost:8000 · interactive docs: http://localhost:8000/docs
 
 ```bash
-curl -X POST http://localhost:8000/orders -H "content-type: application/json" \
+curl -X POST http://localhost:8000/api/v1/orders -H "content-type: application/json" \
   -d '{"customer_id": 1, "lines": [{"product_id": 1, "quantity": "10"}]}'
 ```
 
-## Tests
-
-The tests run against a real PostgreSQL database (`orders_test`), built by the same Alembic migrations as production.
+## Development
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
 docker compose up -d db
-python -m venv .venv && .venv/Scripts/pip install -r requirements.txt   # Windows; use .venv/bin on macOS/Linux
-.venv/Scripts/python -m pytest
+
+ruff check . && ruff format --check .   # lint + formatting
+mypy app                                # strict type check
+pytest                                  # tests + coverage, real PostgreSQL
 ```
 
-## Endpoints
+Tests use a separate database (`orders_test`) built by the same Alembic migrations as production. CI runs all three
+steps on every push and pull request (`.github/workflows/ci.yml`).
 
-| Method | Path | What it does |
+## API
+
+| Method | Path | |
 |---|---|---|
-| GET | `/health` | liveness check |
-| GET / POST | `/products` | list (paginated) / create |
-| GET | `/products/low-stock` | products at or below minimum stock |
-| GET | `/products/{id}` | one product |
-| POST | `/customers` · GET `/customers/{id}` | create / read a customer |
-| POST | `/orders` | place an order and reserve stock |
-| GET | `/orders/{id}` | order with lines and total |
-| POST | `/orders/{id}/cancel` | cancel and return the stock |
+| GET | `/health` | liveness |
+| GET, POST | `/api/v1/products` | list (paginated), create |
+| GET | `/api/v1/products/low-stock` | at or below minimum stock |
+| GET | `/api/v1/products/{id}` | one product |
+| POST · GET | `/api/v1/customers` · `/api/v1/customers/{id}` | create, read |
+| POST | `/api/v1/orders` | place an order, reserve stock |
+| GET | `/api/v1/orders/{id}` | order with lines and total |
+| POST | `/api/v1/orders/{id}/cancel` | cancel, return stock |
 
-## Structure
+Errors: `404` not found · `409` valid request the current state does not allow · `422` invalid input.
+
+## Layout
 
 ```
 app/
-  db.py         engine, session per request
-  models.py     tables as Python classes (SQLAlchemy ORM)
-  schemas.py    what the API accepts and returns (Pydantic)
-  services.py   business rules: place_order, cancel_order, low_stock
-  routers.py    HTTP endpoints, error → status code
-  main.py       FastAPI app
-alembic/        migrations (schema history)
-tests/          pytest, real PostgreSQL
+  api/          routers per resource, shared dependencies
+  config.py     settings from environment
+  db.py         engine and request-scoped session
+  errors.py     domain errors → HTTP status, in one place
+  models.py     SQLAlchemy models
+  schemas.py    request / response schemas
+  services.py   business rules
+alembic/        migrations
+docs/adr/       architecture decisions
+tests/          pytest against PostgreSQL
 ```
 
-## Design decisions
+## License
 
-- **Business rules live in `services.py`, not in the endpoints**: they can be tested and reused (CLI, background jobs).
-- **Row locks instead of optimistic retries**: orders are short and contention is on a few hot products, so a short lock is simpler and correct.
-- **Migrations, not `create_all()`**: every schema change is versioned and reviewable.
+MIT
 
 Built with AI-assisted development.
