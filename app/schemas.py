@@ -1,4 +1,3 @@
-"""Pydantic schemas: what the API accepts and returns. Bad input is rejected here with 422."""
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated

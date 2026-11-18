@@ -58,7 +58,7 @@ def client(SessionTest):
 @pytest.fixture()
 def shop(client):
     """A customer and two products with known stock — the starting point of most tests."""
-    customer = client.post("/customers", json={"name": "Green Corner Ltd", "vat_number": "BG123456789"}).json()
-    tomatoes = client.post("/products", json={"sku": "TOM-RED-KG", "name": "Tomatoes, red", "unit": "kg", "price": "2.40", "stock": "100", "min_stock": "20"}).json()
-    lemons = client.post("/products", json={"sku": "LEM-BOX", "name": "Lemons, box 10 kg", "unit": "box", "price": "18.50", "stock": "1", "min_stock": "5"}).json()
+    customer = client.post("/api/v1/customers", json={"name": "Green Corner Ltd", "vat_number": "BG123456789"}).json()
+    tomatoes = client.post("/api/v1/products", json={"sku": "TOM-RED-KG", "name": "Tomatoes, red", "unit": "kg", "price": "2.40", "stock": "100", "min_stock": "20"}).json()
+    lemons = client.post("/api/v1/products", json={"sku": "LEM-BOX", "name": "Lemons, box 10 kg", "unit": "box", "price": "18.50", "stock": "1", "min_stock": "5"}).json()
     return {"customer": customer, "tomatoes": tomatoes, "lemons": lemons}

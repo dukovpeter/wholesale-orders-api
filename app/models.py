@@ -1,4 +1,3 @@
-"""ORM models: each class is a table, each attribute is a column."""
 from datetime import datetime
 from decimal import Decimal
 from enum import Enum
@@ -22,7 +21,6 @@ class OrderStatus(str, Enum):
 
 
 class Customer(Base):
-    """A shop or restaurant that buys from the wholesaler."""
     __tablename__ = "customers"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -33,7 +31,6 @@ class Customer(Base):
 
 
 class Product(Base):
-    """An item in the catalogue with its current price and stock."""
     __tablename__ = "products"
     __table_args__ = (
         CheckConstraint("stock >= 0", name="stock_not_negative"),
@@ -50,7 +47,6 @@ class Product(Base):
 
 
 class Order(Base):
-    """An order from a customer. Its lines keep the price at the moment of ordering."""
     __tablename__ = "orders"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -67,7 +63,7 @@ class Order(Base):
 
 
 class OrderLine(Base):
-    """One product in an order: quantity and the unit price frozen at order time."""
+    # unit_price is a snapshot of Product.price at order time
     __tablename__ = "order_lines"
     __table_args__ = (CheckConstraint("quantity > 0", name="quantity_positive"),)
 
